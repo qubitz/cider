@@ -1,20 +1,23 @@
 const std = @import("std");
 const testing = std.testing;
 
-pub export fn new(octets: [4]u8) Cidr {
-    return .{
-        .ipAddress = .{
-            .octets = octets,
-        },
-    };
-}
 
-const Cidr = struct {
-    ipAddress: IpAddress,
+
+pub const Cidr = struct {
+    ipAddress: IpV4,
     maskLength: u8,
+
+    pub fn init(octets: @Vector(4, u8)) Cidr {
+        return .{
+            .ipAddress = .{
+                .octets = octets,
+            },
+            .maskLength = 2,
+        };
+    }
 };
 
-const IpAddress = struct {
-    octets: u8[4],
+pub const IpV4 = struct {
+    octets: @Vector(4, u8),
 };
 
