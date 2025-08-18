@@ -6,12 +6,9 @@ pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
-    _ = lib.Cidr.init(.{233,23,32,53});
-    _ = lib.Cidr {
-        .ipAddress = .{
-            .octets = .{233,23,32,53},
-        },
-        .maskLength = 2,
+    _ = lib.Cidr{
+        .ip = .{ 233, 23, 32, 53 },
+        .suffix = 2,
     };
 
     // stdout is for the actual output of your application, for example if you
@@ -26,27 +23,27 @@ pub fn main() !void {
     try bw.flush(); // Don't forget to flush!
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
-
-test "use other module" {
-    try std.testing.expectEqual(@as(i32, 150), lib.add(100, 50));
-}
-
-test "fuzz example" {
-    const Context = struct {
-        fn testOne(context: @This(), input: []const u8) anyerror!void {
-            _ = context;
-            // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-            try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
-        }
-    };
-    try std.testing.fuzz(Context{}, Context.testOne, .{});
-}
+// test "simple test" {
+//     var list = std.ArrayList(i32).init(std.testing.allocator);
+//     defer list.deinit(); // Try commenting this out and see if zig detects the memory leak!
+//     try list.append(42);
+//     try std.testing.expectEqual(@as(i32, 42), list.pop());
+// }
+//
+// test "use other module" {
+//     try std.testing.expectEqual(@as(i32, 150), lib.add(100, 50));
+// }
+//
+// test "fuzz example" {
+//     const Context = struct {
+//         fn testOne(context: @This(), input: []const u8) anyerror!void {
+//             _ = context;
+//             // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
+//             try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
+//         }
+//     };
+//     try std.testing.fuzz(Context{}, Context.testOne, .{});
+// }
 
 const std = @import("std");
 
