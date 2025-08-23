@@ -1,10 +1,28 @@
 const std = @import("std");
 
-pub const IpV4 = @Vector(4, u8);
+pub const IpV4 = struct {
+    decimal: u32,
+
+    pub fn from(octets: [4]u8) IpV4 {
+        var decimal: u32 = undefined;
+        inline for (octets, 0..) |octet, idx| {
+            decimal <<= idx * @sizeOf(u8);
+            decimal = decimal | octet;
+        }
+
+        return .{
+            .decimal = decimal,
+        };
+    }
+};
 
 pub const Cidr = struct {
     ip: IpV4,
     suffix: u6,
+
+    // pub fn netAddress(self: *Cidr) IpV4 {
+    //     return self.ip & self.suffix;
+    // }
 };
 
 const numOctets: u3 = 4;
@@ -36,14 +54,14 @@ pub fn strToIpV4(str: []const u8) !struct { IpV4, u5 } {
     }
 
     return .{
-        octets,
+        IpV4.from(octets),
         strIdx,
     };
 }
 
 // comptime from string
 
-pub fn from(str: []const u8) !Cidr {
+pub fn strToCidr(str: []const u8) !Cidr {
     var ip: IpV4 = undefined;
     var suffix: u6 = undefined;
     const State = enum { ip, slash, suffix };
@@ -106,9 +124,9 @@ fn strToOctet(str: []const u8) !struct { u8, u3 } {
 
 test "cidr from string" {
     try std.testing.expectEqual(Cidr{
-        .ip = .{ 1, 255, 2, 255 },
+        .ip = IpV4.from(.{ 1, 255, 2, 255 }),
         .suffix = 8,
-    }, try Cidr.from("1.255.2.255/8"));
+    }, try strToCidr("1.255.2.255/8"));
 }
 
 test "creates octet from string" {
@@ -121,7 +139,7 @@ test "creates octet from string" {
 }
 
 test "creates ipv4 from string" {
-    try std.testing.expectEqual(.{ .{ 1, 2, 3, 4 }, @as(u5, 7) }, strToIpV4("1.2.3.4"));
-    try std.testing.expectEqual(.{ .{ 1, 12, 123, 1 }, @as(u5, 10) }, strToIpV4("1.12.123.1"));
+    try std.testing.expectEqual(.{ IpV4.from(.{ 1, 2, 3, 4 }), @as(u5, 7) }, strToIpV4("1.2.3.4"));
+    try std.testing.expectEqual(.{ IpV4.from(.{ 1, 12, 123, 1 }), @as(u5, 10) }, strToIpV4("1.12.123.1"));
     try std.testing.expectEqual(error.InvalidDot, strToIpV4("1:2.3.4"));
 }
