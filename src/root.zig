@@ -1,4 +1,6 @@
 const std = @import("std");
+const add = std.math.add;
+const mul = std.math.mul;
 
 pub const Cidr = struct {
     ip: IpV4,
@@ -16,30 +18,27 @@ pub const Cidr = struct {
                 .octet => |x| {
                     octets[x], const skip = try stringToOctet(str[strIdx..]);
                     strIdx +=skip;
-                    std.debug.print("octect {d} = {d}\n", .{x, octets[x]});
-                    std.debug.print("strIdx = {d}\n", .{strIdx});
                     curr = if (x + 1 < octets.len) .{ .dot = x } else .slash;
                 },
                 .dot => |x| {
                     if (str[strIdx] == '.') {
-                        std.debug.print("dot {d}\n", .{x});
                         curr = .{ .octet = x + 1 };
                     } else {
-                        return error.InvalidCharacter;
+                        return error.InvalidDot;
                     }
                 },
                 .slash => {
 
                     if (str[strIdx] == '/') {
-                        std.debug.print("slash\n", .{});
                         curr = .suffix;
                     } else {
-                        return error.InvalidCharacter;
+                        return error.InvalidSlash;
                     }
                 },
                 .suffix => {
-                    suffix = try std.fmt.parseInt(u6, str[strIdx..], 10);
-                    std.debug.print("suffix\n", .{});
+                    suffix = std.fmt.parseInt(u6, str[strIdx..], 10) catch {
+                        return error.InvalidSuffix;
+                    };
                 },
             }
         }
@@ -53,14 +52,12 @@ pub const Cidr = struct {
     fn stringToOctet(str: []const u8) !struct { u8, usize } {
         var total: u8 = 0;
         var idx: u8 = 0;
-        while (idx < 3) : (idx += 1) {
-            //        out of bounds   vvvvvv
+        while (idx < @min(3, str.len)) : (idx += 1) {
             if (std.fmt.charToDigit(str[idx], 10)) |digit| {
-                std.debug.print("digit = {d}\n", .{digit});
-                total = total * 10 + digit;
-                std.debug.print("total = {d}, idx = {d}\n", .{total, idx});
+                total = mul(u8, total, 10) catch { return error.OctetTooLarge; };
+                total = add(u8, total, digit) catch { return error.OctetTooLarge; };
             } else |_| {
-                if (idx == 0) return error.InvalidCharacter;
+                if (idx == 0) return error.InvalidOctet;
                 break;
             }
         }
@@ -85,4 +82,5 @@ test "creates octet from string" {
     try std.testing.expectEqual(.{@as(u8,5), 0},  Cidr.stringToOctet("5"));
     try std.testing.expectEqual(.{@as(u8,27), 1}, Cidr.stringToOctet("27"));
     try std.testing.expectEqual(.{@as(u8,255), 2},  Cidr.stringToOctet("255"));
+
 }
