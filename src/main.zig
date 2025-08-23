@@ -1,7 +1,6 @@
 pub fn main() !void {
-    _= try cider.Cidr.from("123.2.24.255/22");
+    _ = try cider.Cidr.from("1.255.2.255/8");
 }
-
 
 const std = @import("std");
 
