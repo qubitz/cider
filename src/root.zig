@@ -1,9 +1,12 @@
 const std = @import("std");
+const math = std.math
 
+// TODO: use packed struct of 4 u8s. intCast as needed
 pub const IpV4 = struct {
+    const num_octets: u3 = 4;
     decimal: u32,
 
-    pub fn from(octets: [4]u8) IpV4 {
+    pub fn from(octets: [num_octets]u8) IpV4 {
         var decimal: u32 = octets[0];
         decimal <<= @bitSizeOf(u8);
         decimal |=  octets[1];
@@ -23,7 +26,7 @@ pub const IpV4 = struct {
             from(.{ 1, 2, 3, 4 })
         );
         try std.testing.expectEqual(
-            IpV4{ .decimal = std.math.maxInt(u32) },
+            IpV4{ .decimal = math.maxInt(u32) },
             from(.{ 255, 255, 255, 255 })
         );
     }
@@ -34,9 +37,8 @@ pub const Cidr = struct {
     suffix: u6,
 
     pub fn netAddress(self: *const Cidr) IpV4 {
-        const max: u32 = std.math.maxInt(u32);
         return .{
-            .decimal = self.ip.decimal & ~(max >> self.suffix),
+            .decimal = self.ip.decimal & ~math.shr(math.maxInt(u32), self.suffix),
         };
     }
 
@@ -48,10 +50,8 @@ pub const Cidr = struct {
     }
 };
 
-const numOctets: u3 = 4;
-
 pub fn strToIpV4(str: []const u8) !struct { IpV4, u5 } {
-    var octets: [numOctets]u8 = undefined;
+    var octets: [IpV4.num_octets]u8 = undefined;
     const State = union(enum) { octet: u3, dot: u3 };
     var curr = State{ .octet = 0 };
 
@@ -61,7 +61,7 @@ pub fn strToIpV4(str: []const u8) !struct { IpV4, u5 } {
             .octet => |x| {
                 octets[x], const skip = try strToOctet(str[strIdx..]);
                 strIdx += skip;
-                curr = if (x + 1 < numOctets) .{ .dot = x } else {
+                curr = if (x + 1 < IpV4.num_octets) .{ .dot = x } else {
                     break;
                 };
             },
@@ -121,14 +121,14 @@ pub fn strToCidr(str: []const u8) !Cidr {
     };
 }
 
-const numOctetDigits = 3;
+const num_octet_digits = 3;
 const add = std.math.add;
 const mul = std.math.mul;
 
 fn strToOctet(str: []const u8) !struct { u8, u3 } {
     var total: u8 = 0;
     var idx: u3 = 0;
-    while (idx < @min(numOctetDigits, str.len)) : (idx += 1) {
+    while (idx < @min(num_octet_digits, str.len)) : (idx += 1) {
         if (std.fmt.charToDigit(str[idx], 10)) |digit| {
             total = mul(u8, total, 10) catch {
                 return error.OctetTooLarge;
