@@ -1,5 +1,8 @@
 pub fn main() !void {
-    _ = try cider.Cidr.from("1.255.2.255/8");
+	try std.testing.expectEqual(
+		cider.IpV4{ .decimal = std.math.maxInt(u32) },
+		cider.IpV4.from(.{ 255, 255, 255, 255 })
+	);
 }
 
 const std = @import("std");

@@ -4,15 +4,28 @@ pub const IpV4 = struct {
     decimal: u32,
 
     pub fn from(octets: [4]u8) IpV4 {
-        var decimal: u32 = undefined;
-        inline for (octets, 0..) |octet, idx| {
-            decimal <<= idx * @sizeOf(u8);
-            decimal = decimal | octet;
-        }
+        var decimal: u32 = octets[0];
+        decimal <<= @bitSizeOf(u8);
+        decimal |=  octets[1];
+        decimal <<= @bitSizeOf(u8);
+        decimal |=  octets[2];
+        decimal <<= @bitSizeOf(u8);
+        decimal |= octets[3];
 
         return .{
             .decimal = decimal,
         };
+    }
+
+    test "converts octets to decimal" {
+        try std.testing.expectEqual(
+            IpV4{ .decimal = 0x01_02_03_04 },
+            from(.{ 1, 2, 3, 4 })
+        );
+        try std.testing.expectEqual(
+            IpV4{ .decimal = std.math.maxInt(u32) },
+            from(.{ 255, 255, 255, 255 })
+        );
     }
 };
 
@@ -20,9 +33,19 @@ pub const Cidr = struct {
     ip: IpV4,
     suffix: u6,
 
-    // pub fn netAddress(self: *Cidr) IpV4 {
-    //     return self.ip & self.suffix;
-    // }
+    pub fn netAddress(self: *const Cidr) IpV4 {
+        const max: u32 = std.math.maxInt(u32);
+        return .{
+            .decimal = self.ip.decimal & ~(max >> self.suffix),
+        };
+    }
+
+    test "computes network address" {
+        try std.testing.expectEqual(
+            (strToIpV4("1.0.0.0") catch unreachable).@"0",
+            (strToCidr("1.255.2.255/8") catch unreachable).netAddress(),
+        );
+    }
 };
 
 const numOctets: u3 = 4;
